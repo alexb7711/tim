@@ -1,0 +1,28 @@
+[project]
+name = "tim"
+dynamic = ["version"]
+description = "Track the time you work on stuff, per thing."
+authors = [
+    {name = "Alexander Brown", email = "alex.brown7711@gmail.com"},
+]
+dependencies = [
+    "coverage>=7.10.7",
+]
+requires-python = ">=3.13"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[project.scripts]
+tim = 'tim.__main__:run'
+
+[tool.setuptools.dynamic]
+version = {attr = 'src.tim.__meta__.__version__'}
+
+[tool.pdm]
+distribution = true
+
+[tool.black]
