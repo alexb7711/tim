@@ -58,10 +58,10 @@ class Tim:
         )
 
         # Parse the input arguments
-        options, args = parser.parse_args(args, values)
+        options, _ = parser.parse_args(args, values)
 
         # Pass the options to the runner
-        self._run(options, args)
+        self._run(options)
 
         return
 
@@ -71,18 +71,17 @@ class Tim:
 
     ##===================================================================================
     #
-    def _run(self, options: dict, args: list):
+    def _run(self, options: dict):
+        # Print out the summary if asked to do so
+        if options.summary:
+            self._print_summary()
+            return
+
         # Read in the database
         self._read_database()
 
         # Update the tasks first
-        if args:
-            for t in args: self._add_or_update(t)
-        else:
-            self._prompt()
-
-        # Print out the summary if asked to do so
-        if options.summary: self._print_summary()
+        self._prompt()
 
         return
 
@@ -107,12 +106,6 @@ class Tim:
             writer = csv.DictWriter(f, fieldnames=self.m_db_csv[0].keys())
             writer.writeheader()
             writer.writerows(self.m_db_csv)
-        return
-
-    ##===================================================================================
-    #
-    def _add_or_update(self, task: str):
-        print(task)
         return
 
     ##===================================================================================
@@ -148,8 +141,32 @@ class Tim:
     ##===================================================================================
     #
     def _prompt(self):
-        print("You wanna add add a task?")
+        menu = """
+               MENU
+        ####################
+          a: add task
+          u: update task
+          s: print summary
+          q: Bye Tim
+        ####################
+        """
+        while True:
+            print(menu)
+            task = input("> ")
+
+            match task.lower():
+                case 'a':
+                    continue
+                case 'u':
+                    continue
+                case 's':
+                    self._print_summary()
+                case 'q':
+                    print("Bye Tim");
+                    return
+
         return
+
 
 #########################################################################################
 # SCRIPT
