@@ -1,4 +1,6 @@
-import argparse
+import optparse
+import csv
+import tim
 
 from pathlib import Path
 
@@ -8,6 +10,11 @@ from pathlib import Path
 
 
 class Tim:
+
+    #####################################################################################
+    # PUBLIC
+    #####################################################################################
+
     ##===================================================================================
     #
     def __init__(self):
@@ -17,42 +24,58 @@ class Tim:
     #
     def parse_options(self, args=None, values=None):
         """
-        Define and parse `argparse` options for command-line usage.
+        Define and parse `optparse` options for command-line usage.
         """
 
         # Program description and use
-        usage = """%(prog)s [options]"""
+        usage = """%prog [OPTIONS] [TASKNAME]"""
         desc = "Tim the time tracking application."
+        ver = str(tim.__version__)
         # Optional flags
-        parser = argparse.ArgumentParser(prog="Tim", usage=usage, description=desc)
-        parser.add_argument(
-            "-a",
-            "--add",
-            dest="task",
-            default=None,
-            help="Create a task",
-        )
-        parser.add_argument(
-            "-u",
-            "--update",
-            dest="task",
-            default=None,
-            help="Update a task",
-        )
-        parser.add_argument(
+        parser = optparse.OptionParser(prog="Tim", usage=usage, description=desc, version=ver)
+        parser.add_option(
             "-s",
             "--summary",
-            dest="std_output",
+            dest="summary",
             default=False,
+            action="store_true",
             help="Summarize what you did today",
         )
 
         # Parse the input arguments
-        options = parser.parse_args(args, values)
+        options, args = parser.parse_args(args, values)
 
-        # Save the options
-        return vars(options)
+        # Pass the options to the runner
+        self._run(options, args)
 
+        return
+
+    #####################################################################################
+    # PRIVATE
+    #####################################################################################
+
+    ##===================================================================================
+    #
+    def _run(self, options: dict, args: list):
+        # Update the tasks first
+        for t in args: self._add_or_update(t)
+
+        # Print out the summary if asked to do so
+        if options.summary: self._print_summary()
+
+        return
+
+    ##===================================================================================
+    #
+    def _add_or_update(self, task: str):
+        print(task)
+        return
+
+    ##===================================================================================
+    #
+    def _print_summary(self):
+        print("SUMMARY")
+        return
 
 #########################################################################################
 # SCRIPT
