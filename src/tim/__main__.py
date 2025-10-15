@@ -94,7 +94,13 @@ class Tim:
 
         # Read in the database
         with open(self.m_db_file, 'r', newline = '') as f:
-            m_db_csv = csv.DictReader(f)
+            db_csv = csv.DictReader(f)
+
+            self.m_db_csv = []
+            for row in db_csv: self.m_db_csv.append(row)
+
+        print("Database: ", self.m_db_file)
+        for row in self.m_db_csv: print(row)
 
         return
 
@@ -105,13 +111,28 @@ class Tim:
         with open(self.m_db_file, 'w', newline = '') as f:
             writer = csv.DictWriter(f, fieldnames=self.m_db_csv[0].keys())
             writer.writeheader()
-            writer.writerows(self.m_db_csv)
+
+            ## Print only non-empty rows
+            for row in self.m_db_csv:
+                if all(cell.strip() == '' for cell in row):
+                    writer.writerow(row)
         return
 
     ##===================================================================================
     #
     def _print_summary(self):
         print("SUMMARY")
+        return
+
+    ##===================================================================================
+    #
+    def _add(self):
+        return
+
+    ##===================================================================================
+    #
+    def _update(self):
+        self._print_tasks()
         return
 
     ##===================================================================================
@@ -140,6 +161,23 @@ class Tim:
 
     ##===================================================================================
     #
+    def _get_unique_task(self) -> list:
+        return {d["task"]: d["charge"] for d in self.m_db_csv if "task" in d}
+
+    ##===================================================================================
+    #
+    def _print_tasks(self):
+        tasks = self._get_unique_task()
+
+        print("< What do you want to update?")
+        for i, (t, c) in enumerate(tasks.items()):
+            print(f"{i}: {t} - {c}")
+
+        task = input(f"[0-{len(tasks)-1}] > ")
+        return
+
+    ##===================================================================================
+    #
     def _prompt(self):
         menu = """
                MENU
@@ -158,7 +196,7 @@ class Tim:
                 case 'a':
                     continue
                 case 'u':
-                    continue
+                    self._update()
                 case 's':
                     self._print_summary()
                 case 'q':
@@ -166,7 +204,6 @@ class Tim:
                     return
 
         return
-
 
 #########################################################################################
 # SCRIPT
