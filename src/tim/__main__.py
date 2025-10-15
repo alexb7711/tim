@@ -76,7 +76,10 @@ class Tim:
         self._read_database()
 
         # Update the tasks first
-        for t in args: self._add_or_update(t)
+        if args:
+            for t in args: self._add_or_update(t)
+        else:
+            self._prompt()
 
         # Print out the summary if asked to do so
         if options.summary: self._print_summary()
@@ -142,11 +145,28 @@ class Tim:
 
         return cache_dir
 
+    ##===================================================================================
+    #
+    def _prompt(self):
+        print("You wanna add add a task?")
+        return
+
 #########################################################################################
 # SCRIPT
 #########################################################################################
 
+tim_text = R"""
+                                                         .-````-.
+                                                        / -   -  \
+   ▄      ▀                                            |  .-. .- |
+ ▄▄█▄▄  ▄▄▄    ▄▄▄▄▄                                   |  \o| |o (|   <  Tim
+   █      █    █ █ █                                   \     ^    /
+   █      █    █ █ █                                    '.  )--' /
+   ▀▄▄  ▄▄█▄▄  █ █ █  - the time whisperer                '-...-'
+"""
 
 def run():
+    print(tim_text)
+
     tim = Tim()
     return
