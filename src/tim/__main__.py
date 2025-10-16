@@ -162,13 +162,13 @@ class Tim:
         self._prompt("Whats the charge code for " + project + "?", True)
         charge_code = self._input("Enter the charge code")
         self._prompt("What time did you start work on " + project + " today?", True)
-        start_time = self._input("Enter start time")
+        start_time = self._input("Enter start time [HH:MM] (24 Hr)")
 
         # Update global project list
         self._add_or_append(self.m_prj_db_csv, {"project": project, "charge": charge_code})
 
         # Update daily task list
-        self._add_or_append(self.m_db_csv, {"project": project, "charge": charge_code, "start": start_time, "stop": -1})
+        self._add_or_append(self.m_db_csv, {"project": project, "charge": charge_code, "start": start_time, "stop": "00:00"})
         return
 
     ##===================================================================================
@@ -178,14 +178,32 @@ class Tim:
         project = self._print_projects()
 
         # Check if the task was started
-
-        ## If it was, prompt for and end time
+        if self._project_started(project) >= 0:
+            ## If it was, prompt for and end time
+            print("GOTCHA")
 
         # Otherwise the task was not started yet
-
-        ## Set the current time and tell the user
+        else:
+            ## Set the current time and tell the user
+            print("hi")
 
         return
+
+    ##===================================================================================
+    #
+    def _str_to_datetime(self):
+        return
+
+    ##===================================================================================
+    #
+    def _project_started(self, project: str) -> bool:
+        for i, d in enumerate(self.m_db_csv):
+            print(f"{d["project"] == project}")
+            if d["project"] == project and d["start"] != "00:00" and d["stop"] == "00:00":
+                print(i)
+                return i
+        ## The item was not found
+        return -1
 
     ##===================================================================================
     #
@@ -218,15 +236,16 @@ class Tim:
 
     ##===================================================================================
     #
-    def _print_projects(self) -> int:
+    def _print_projects(self) -> str:
         projects = self._get_unique_project()
 
         self._prompt("What do you want to update?", True)
         for i, (t, c) in enumerate(projects.items()):
             self._prompt(f"{i}: {t} - {c}")
 
-        project = self._input(f"[0-{len(projects)-1}]")
-        return int(project)
+        pidx = int(self._input(f"[0-{len(projects)-1}]"))
+        print(projects)
+        return list(projects.keys())[pidx]
 
     ##===================================================================================
     #
