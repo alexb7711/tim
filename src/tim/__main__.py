@@ -2,6 +2,7 @@ import optparse
 import csv
 import tim
 import platform
+import os
 
 from pathlib import Path
 from datetime import datetime
@@ -23,9 +24,11 @@ class Tim:
         # Set the database paths
         self.m_db_path = self._get_cache_directory() / Path(str(datetime.now().year))
         self.m_db_file = self.m_db_path / Path(str(datetime.now().month)).with_suffix(".csv")
+        self.m_prj_file = self.m_db_path / Path("projects").with_suffix(".csv")
 
         # Database csv list of dictionaries standard table format
-        self.m_db_csv  = [{"task": None, "charge": None, "start": None, "stop": None}]
+        self.m_db_csv  = [{"project": None, "charge": None, "start": None, "stop": None}]
+        self.m_prj_db_csv  = [{"project": None, "charge": None}]
 
         # Create the directory if it does not exist
         self.m_db_path.mkdir(parents=True, exist_ok=True)
@@ -34,6 +37,13 @@ class Tim:
         self.parse_options()
 
         return
+
+    ##===================================================================================
+    #
+    def __del__(self):
+        self._prompt("Saving your work for later!", True)
+        self._write_global_database()
+        self._write_database()
 
     ##===================================================================================
     #
@@ -78,38 +88,54 @@ class Tim:
             return
 
         # Read in the database
-        self._read_database()
+        self.m_db_csv = self._read_database(self.m_db_file)
+        self.m_prj_db_csv = self._read_database(self.m_prj_file)
 
         # Update the tasks first
-        self._prompt()
+        self._menu()
 
         return
 
     ##===================================================================================
     #
-    def _read_database(self):
+    def _read_database(self, path: str) -> dict:
         # Create the database if it does not exist
         if not self.m_db_file.is_file():
             self._write_database()
 
         # Read in the database
+        dict_csv = []
         with open(self.m_db_file, 'r', newline = '') as f:
             db_csv = csv.DictReader(f)
 
-            self.m_db_csv = []
-            for row in db_csv: self.m_db_csv.append(row)
+            for row in db_csv: dict_csv.append(row)
 
-        print("Database: ", self.m_db_file)
-        for row in self.m_db_csv: print(row)
-
-        return
+        return dict_csv
 
     ##===================================================================================
     #
     def _write_database(self):
         # Write to the database
         with open(self.m_db_file, 'w', newline = '') as f:
+            if len(self.m_db_csv) == 0: return
+
             writer = csv.DictWriter(f, fieldnames=self.m_db_csv[0].keys())
+            writer.writeheader()
+
+            ## Print only non-empty rows
+            for row in self.m_db_csv:
+                if all(cell.strip() == '' for cell in row):
+                    writer.writerow(row)
+        return
+
+    ##===================================================================================
+    #
+    def _write_global_database(self):
+        # Write to the database
+        with open(self.m_prj_file, 'w', newline = '') as f:
+            if len(self.m_prj_db_csv) == 0: return
+
+            writer = csv.DictWriter(f, fieldnames=self.m_prj_db_csv[0].keys())
             writer.writeheader()
 
             ## Print only non-empty rows
@@ -127,12 +153,25 @@ class Tim:
     ##===================================================================================
     #
     def _add(self):
+        # Talk to Tim
+        self._prompt("What is the project you are working on?", True)
+        project = self._input("Enter a single word for the name")
+        self._prompt("Whats the charge code for " + project + "?", True)
+        charge_code = self._input("Enter the charge code")
+        self._prompt("What time did you start work on " + project + " today?", True)
+        start_time = self._input("Enter start time")
+
+        # Update global project list
+        self._add_or_append(self.m_prj_db_csv, {"project": project, "charge": charge_code})
+
+        # Update daily task list
+        self._add_or_append(self.m_db_csv, {"project": project, "charge": charge_code, "start": start_time, "stop": 0})
         return
 
     ##===================================================================================
     #
     def _update(self):
-        self._print_tasks()
+        self._print_projects()
         return
 
     ##===================================================================================
@@ -162,39 +201,85 @@ class Tim:
     ##===================================================================================
     #
     def _get_unique_task(self) -> list:
-        return {d["task"]: d["charge"] for d in self.m_db_csv if "task" in d}
+        return {d["project"]: d["charge"] for d in self.m_db_csv if "project" in d}
 
     ##===================================================================================
     #
-    def _print_tasks(self):
-        tasks = self._get_unique_task()
+    def _print_projects(self):
+        projects = self._get_unique_task()
 
-        print("< What do you want to update?")
-        for i, (t, c) in enumerate(tasks.items()):
-            print(f"{i}: {t} - {c}")
+        self._prompt("What do you want to update?", True)
+        for i, (t, c) in enumerate(projects.items()):
+            self._prompt(f"{i}: {t} - {c}")
 
-        task = input(f"[0-{len(tasks)-1}] > ")
+        task = self._input(f"[0-{len(projects)-1}]")
         return
 
     ##===================================================================================
     #
-    def _prompt(self):
-        menu = """
-               MENU
-        ####################
-          a: add task
-          u: update task
-          s: print summary
-          q: Bye Tim
-        ####################
+    def _get_term_width(self):
+        try:
+            terminal_width = os.get_terminal_size().columns
+        except OSError:
+            # Fallback if terminal size cannot be determined (e.g., in some IDEs)
+            terminal_width = 80
+        return terminal_width
+
+    ##===================================================================================
+    #
+    def _prompt_tim(self):
+        tim = R"""
+  .-````-.
+ / -   -  \
+|  .-. .- |
+|  \o| |o (| 
+\     ^    /
+ '.  )--' /
+   '-...-'
+"""
+
+        lines = tim.split("\n")
+        for line in lines: print(" " * (self._get_term_width()-20) + line)
+
+        return
+
+    ##===================================================================================
+    #
+    def _prompt(self, txt: str, prompt_tim: bool = False):
+        if prompt_tim: self._prompt_tim()
+
+        lines = txt.split("\n")
+        for line in lines: 
+            if not line.isspace():
+                line = "< " + line
+                print(line.rjust(self._get_term_width()))
+        return
+
+    ##===================================================================================
+    #
+    def _input(self, txt: str = ""):
+        if txt: txt = txt + " "
+        p_txt = txt + "> "
+        return input(p_txt)
+
+    ##===================================================================================
+    #
+    def _menu(self):
+        menu = """a: add project
+u: update time
+s: print summary
+q: Bye Tim
         """
         while True:
-            print(menu)
-            task = input("> ")
+            try:
+                self._prompt(menu, True)
+                task = self._input("Type a, u, s, or q")
+            except KeyboardInterrupt:
+                return
 
             match task.lower():
                 case 'a':
-                    continue
+                    self._add()
                 case 'u':
                     self._update()
                 case 's':
@@ -204,6 +289,19 @@ class Tim:
                     return
 
         return
+
+    ##===================================================================================
+    #
+    def _add_or_append(self, l: list, element: dict):
+        # Convert dictionaries to a hashable format (tuple of sorted items)
+        hashable_list = [tuple(sorted(d.items())) for d in l]
+        hashable_new_dict = tuple(sorted(element.items()))
+
+        if hashable_new_dict not in hashable_list:
+            my_list.append(new_dict)
+
+        return my_list
+
 
 #########################################################################################
 # SCRIPT
@@ -216,7 +314,7 @@ tim_text = R"""
  ▄▄█▄▄  ▄▄▄    ▄▄▄▄▄                                   |  \o| |o (|   <  Tim
    █      █    █ █ █                                   \     ^    /
    █      █    █ █ █                                    '.  )--' /
-   ▀▄▄  ▄▄█▄▄  █ █ █  - the time whisperer                '-...-'
+   ▀▄▄  ▄▄█▄▄  █ █ █  - the time keeper                   '-...-'
 """
 
 def run():
