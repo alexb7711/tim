@@ -24,11 +24,11 @@ class Tim:
         # Set the database paths
         self.m_db_path = self._get_cache_directory() / Path(str(datetime.now().year))
         self.m_db_file = self.m_db_path / Path(str(datetime.now().month)).with_suffix(".csv")
-        self.m_prj_file = self.m_db_path / Path("projects").with_suffix(".csv")
+        self.m_prj_file = self._get_cache_directory() / Path("projects").with_suffix(".csv")
 
         # Database csv list of dictionaries standard table format
-        self.m_db_csv  = [{"project": None, "charge": None, "start": None, "stop": None}]
-        self.m_prj_db_csv  = [{"project": None, "charge": None}]
+        self.m_db_csv  = [{"project": '', "charge": '', "start": '', "stop": ''}]
+        self.m_prj_db_csv  = [{"project": '', "charge": ''}]
 
         # Create the directory if it does not exist
         self.m_db_path.mkdir(parents=True, exist_ok=True)
@@ -41,7 +41,7 @@ class Tim:
     ##===================================================================================
     #
     def __del__(self):
-        self._prompt("Saving your work for later!", True)
+        self._prompt("I'll be here... counting the minutes.", True)
         self._write_global_database()
         self._write_database()
 
@@ -87,9 +87,14 @@ class Tim:
             self._print_summary()
             return
 
+        # Create the database if it does not exist
+        if not self.m_db_file.is_file(): self._write_database()
+        if not self.m_prj_file.is_file(): self._write_global_database()
+
         # Read in the database
-        self.m_db_csv = self._read_database(self.m_db_file)
-        self.m_prj_db_csv = self._read_database(self.m_prj_file)
+        self.m_db_csv = self.m_db_csv + self._read_database(self.m_db_file)
+        self.m_prj_db_csv = self.m_prj_db_csv + self._read_database(self.m_prj_file)
+        for row in self.m_prj_db_csv: print(row)
 
         # Update the tasks first
         self._menu()
@@ -99,13 +104,9 @@ class Tim:
     ##===================================================================================
     #
     def _read_database(self, path: str) -> dict:
-        # Create the database if it does not exist
-        if not self.m_db_file.is_file():
-            self._write_database()
-
         # Read in the database
         dict_csv = []
-        with open(self.m_db_file, 'r', newline = '') as f:
+        with open(path, 'r', newline = '') as f:
             db_csv = csv.DictReader(f)
 
             for row in db_csv: dict_csv.append(row)
@@ -124,7 +125,9 @@ class Tim:
 
             ## Print only non-empty rows
             for row in self.m_db_csv:
-                if all(cell.strip() == '' for cell in row):
+                print(row.values())
+                if row and all(value for value in row.values()):
+                    print("Writing!!!! ", row)
                     writer.writerow(row)
         return
 
@@ -139,8 +142,8 @@ class Tim:
             writer.writeheader()
 
             ## Print only non-empty rows
-            for row in self.m_db_csv:
-                if all(cell.strip() == '' for cell in row):
+            for row in self.m_prj_db_csv:
+                if row and all(value for value in row.values()):
                     writer.writerow(row)
         return
 
@@ -165,11 +168,11 @@ class Tim:
         self._add_or_append(self.m_prj_db_csv, {"project": project, "charge": charge_code})
 
         # Update daily task list
-        self._add_or_append(self.m_db_csv, {"project": project, "charge": charge_code, "start": start_time, "stop": 0})
+        self._add_or_append(self.m_db_csv, {"project": project, "charge": charge_code, "start": start_time, "stop": -1})
         return
 
     ##===================================================================================
-    #
+    #: 
     def _update(self):
         self._print_projects()
         return
@@ -201,7 +204,7 @@ class Tim:
     ##===================================================================================
     #
     def _get_unique_task(self) -> list:
-        return {d["project"]: d["charge"] for d in self.m_db_csv if "project" in d}
+        return {d["project"]: d["charge"] for d in self.m_db_csv if "project" in d and d["project"]}
 
     ##===================================================================================
     #
@@ -298,9 +301,9 @@ q: Bye Tim
         hashable_new_dict = tuple(sorted(element.items()))
 
         if hashable_new_dict not in hashable_list:
-            my_list.append(new_dict)
+            l.append(element)
 
-        return my_list
+        return l
 
 
 #########################################################################################
