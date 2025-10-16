@@ -41,7 +41,7 @@ class Tim:
     ##===================================================================================
     #
     def __del__(self):
-        self._prompt("I'll be here... counting the minutes.", True)
+        self._prompt("I'll be here... casting minutes into hours...", True)
         self._write_global_database()
         self._write_database()
 
@@ -172,9 +172,19 @@ class Tim:
         return
 
     ##===================================================================================
-    #: 
+    #
     def _update(self):
-        self._print_projects()
+        # Get the project
+        project = self._print_projects()
+
+        # Check if the task was started
+
+        ## If it was, prompt for and end time
+
+        # Otherwise the task was not started yet
+
+        ## Set the current time and tell the user
+
         return
 
     ##===================================================================================
@@ -203,20 +213,20 @@ class Tim:
 
     ##===================================================================================
     #
-    def _get_unique_task(self) -> list:
+    def _get_unique_project(self) -> list:
         return {d["project"]: d["charge"] for d in self.m_db_csv if "project" in d and d["project"]}
 
     ##===================================================================================
     #
-    def _print_projects(self):
-        projects = self._get_unique_task()
+    def _print_projects(self) -> int:
+        projects = self._get_unique_project()
 
         self._prompt("What do you want to update?", True)
         for i, (t, c) in enumerate(projects.items()):
             self._prompt(f"{i}: {t} - {c}")
 
-        task = self._input(f"[0-{len(projects)-1}]")
-        return
+        project = self._input(f"[0-{len(projects)-1}]")
+        return int(project)
 
     ##===================================================================================
     #
@@ -317,7 +327,7 @@ tim_text = R"""
  ▄▄█▄▄  ▄▄▄    ▄▄▄▄▄                                   |  \o| |o (|   <  Tim
    █      █    █ █ █                                   \     ^    /
    █      █    █ █ █                                    '.  )--' /
-   ▀▄▄  ▄▄█▄▄  █ █ █  - the time keeper                   '-...-'
+   ▀▄▄  ▄▄█▄▄  █ █ █  - the time keeping wizard           '-...-'
 """
 
 def run():
